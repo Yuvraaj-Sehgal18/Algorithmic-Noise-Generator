@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Algorithmic Noise Generator",
+  "description": "Generates background traffic to obfuscate user behavior.",
+  "version": "1.0",
+  "permissions": [
+    "storage",
+    "alarms",
+    "offscreen",
+    "scripting"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html"
+  }
+}

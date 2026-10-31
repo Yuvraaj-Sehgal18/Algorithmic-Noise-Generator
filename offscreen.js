@@ -1,22 +1,23 @@
+
 // offscreen.js – runs in the hidden offscreen document and performs fake traffic
 
 // Personas with keyword pools
 const PERSONAS = [
   {
-    name: 'Astrophysics',
-    topics: ['black holes', 'dark matter', 'exoplanet', 'cosmic microwave background', 'nebula', 'gravitational waves']
+    name: 'Technology',
+    topics: ['smartphones', 'computer tips', 'mobile apps', 'internet safety', 'new technology', 'useful websites']
   },
   {
-    name: 'Vintage Gardening',
-    topics: ['heirloom tomatoes', 'permaculture', 'composting', 'seed saving', "old-fashioned gardening tools", 'rose pruning']
+    name: 'Food and Cooking',
+    topics: ['easy recipes', 'homemade food', 'healthy breakfast', 'street food', 'cooking tips', 'popular desserts']
   },
   {
-    name: 'Luxury Sailing',
-    topics: ['yacht charter', 'sail trim', 'maritime law', 'tide charts', 'navigation electronics', 'luxury marinas']
+    name: 'Travel and Places',
+    topics: ['beautiful beaches', 'famous cities', 'travel tips', 'mountain trips', 'places to visit', 'budget travel']
   },
   {
-    name: 'Medieval History',
-    topics: ['crusades', 'feudalism', 'knight armor', 'manuscript illumination', 'castle architecture', 'renaissance art']
+    name: 'Everyday Lifestyle',
+    topics: ['home decoration', 'daily habits', 'fitness tips', 'shopping ideas', 'fashion trends', 'garden ideas']
   }
 ];
 
@@ -32,11 +33,11 @@ function buildQuery(persona) {
   for (let i = 0; i < count; i++) {
     words.push(rand(persona.topics));
   }
-  // Simple title‑case and join
+  // Simple title-case and join
   return words.map(w => w.replace(/(^|\s)\w/g, c => c.toUpperCase())).join(' ');
 }
 
-// Perform hidden fetches – Google search + Wikipedia page (best‑effort, ignore CORS)
+// Perform hidden fetches – Google search + Wikipedia page (best-effort, ignore CORS)
 async function performNoise() {
   const persona = rand(PERSONAS);
   const query = buildQuery(persona);
@@ -68,7 +69,7 @@ async function performNoise() {
     query,
     urls
   }, () => {
-    // No‑op; background will handle storage
+    // No-op; background will handle storage
   });
 }
 

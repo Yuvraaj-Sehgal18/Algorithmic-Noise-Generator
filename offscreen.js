@@ -18,6 +18,30 @@ const PERSONAS = [
   {
     name: 'Everyday Lifestyle',
     topics: ['home decoration', 'daily habits', 'fitness tips', 'shopping ideas', 'fashion trends', 'garden ideas']
+  },
+  {
+    name: 'Sports and Games',
+    topics: ['football matches', 'cricket news', 'basketball games', 'sports players', 'video games', 'outdoor games']
+  },
+  {
+    name: 'Health and Fitness',
+    topics: ['daily exercise', 'healthy food', 'morning walks', 'fitness routines', 'sleep habits', 'simple workouts']
+  },
+  {
+    name: 'Movies and Music',
+    topics: ['popular movies', 'new songs', 'movie reviews', 'music artists', 'TV shows', 'best comedy films']
+  },
+  {
+    name: 'Education and Learning',
+    topics: ['learning English', 'study tips', 'online courses', 'general knowledge', 'science facts', 'new skills']
+  },
+  {
+    name: 'Home and Family',
+    topics: ['home cleaning', 'family activities', 'easy home repairs', 'household tips', 'kids activities', 'home organisation']
+  },
+  {
+    name: 'Nature and Animals',
+    topics: ['beautiful birds', 'pet care', 'wildlife facts', 'forest animals', 'flower gardens', 'nature photography']
   }
 ];
 
@@ -30,9 +54,11 @@ function rand(arr) {
 function buildQuery(persona) {
   const words = [];
   const count = Math.floor(Math.random() * 3) + 1; // 1-3 keywords
+
   for (let i = 0; i < count; i++) {
     words.push(rand(persona.topics));
   }
+
   // Simple title-case and join
   return words.map(w => w.replace(/(^|\s)\w/g, c => c.toUpperCase())).join(' ');
 }
@@ -47,20 +73,34 @@ async function performNoise() {
   const wikiTopic = query.replace(/\s+/g, '_');
   const wikiUrl = wikiBase + encodeURIComponent(wikiTopic);
 
-  console.log(`%c[NOISE ENGINE] Generating noise profile: %c${persona.name}`, 'color: #38bdf8; font-weight: bold;', 'color: #f59e0b; font-weight: bold;');
-  console.log(`%c[QUERY GENERATED] "${query}"`, 'color: #a855f7; font-weight: bold;');
+  console.log(
+    `%c[NOISE ENGINE] Generating noise profile: %c${persona.name}`,
+    'color: #38bdf8; font-weight: bold;',
+    'color: #f59e0b; font-weight: bold;'
+  );
+
+  console.log(
+    `%c[QUERY GENERATED] "${query}"`,
+    'color: #a855f7; font-weight: bold;'
+  );
 
   const urls = [];
+
   try {
     console.log(`%c[NETWORK GET] Fetching: ${googleUrl}`, 'color: #94a3b8;');
     await fetch(googleUrl, { method: 'GET', mode: 'no-cors' });
     urls.push(googleUrl);
-  } catch (e) { /* ignore errors – purpose is only to create network traffic */ }
+  } catch (e) {
+    // Ignore network errors
+  }
+
   try {
     console.log(`%c[NETWORK GET] Fetching: ${wikiUrl}`, 'color: #94a3b8;');
     await fetch(wikiUrl, { method: 'GET', mode: 'no-cors' });
     urls.push(wikiUrl);
-  } catch (e) { }
+  } catch (e) {
+    // Ignore network errors
+  }
 
   // Report back to background service worker
   chrome.runtime.sendMessage({

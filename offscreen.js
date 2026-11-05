@@ -1,7 +1,7 @@
 
-// offscreen.js – runs in the hidden offscreen document and performs fake traffic
+// offscreen.js - Handles synthetic browsing activity in the background
 
-// Personas with keyword pools
+// Available personas and their everyday interests
 const PERSONAS = [
   {
     name: 'Technology',
@@ -45,85 +45,140 @@ const PERSONAS = [
   }
 ];
 
-// Utility: pick a random element
+// Website configuration
+const WEBSITES = {
+  google: 'https://www.google.com/search?q=',
+  wikipedia: 'https://en.wikipedia.org/wiki/'
+};
+
+// Prevent multiple activity cycles from running together
+let isRunning = false;
+
+// Select a random item from an array
 function rand(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// Build a plausible query string from a persona
+// Select a random persona
+function selectPersona() {
+  return rand(PERSONAS);
+}
+
+// Generate a query using unique topics
 function buildQuery(persona) {
-  const words = [];
-  const count = Math.floor(Math.random() * 3) + 1; // 1-3 keywords
+  const topics = [...persona.topics];
+  const count = Math.floor(Math.random() * 3) + 1;
+  const selectedTopics = [];
 
-  for (let i = 0; i < count; i++) {
-    words.push(rand(persona.topics));
+  for (let i = 0; i < count && topics.length > 0; i++) {
+    const index = Math.floor(Math.random() * topics.length);
+    selectedTopics.push(topics.splice(index, 1)[0]);
   }
 
-  // Simple title-case and join
-  return words.map(w => w.replace(/(^|\s)\w/g, c => c.toUpperCase())).join(' ');
+  return selectedTopics
+    .map(topic => topic.replace(/\b\w/g, char => char.toUpperCase()))
+    .join(' ');
 }
 
-// Perform hidden fetches – Google search + Wikipedia page (best-effort, ignore CORS)
+// Create a Wikipedia URL
+function createWikipediaUrl(query) {
+  const topic = query.replace(/\s+/g, '_');
+  return WEBSITES.wikipedia + encodeURIComponent(topic);
+}
+
+// Perform a network request
+async function sendRequest(url) {
+  try {
+    await fetch(url, {
+      method: 'GET',
+      mode: 'no-cors'
+    });
+
+    console.log(`[NOISE ENGINE] Request attempted: ${url}`);
+
+    return {
+      url,
+      status: 'attempted'
+    };
+
+  } catch (error) {
+    console.error('[NOISE ENGINE] Request failed:', error);
+
+    return {
+      url,
+      status: 'failed',
+      error: error.message
+    };
+  }
+}
+
+// Generate one synthetic activity cycle
 async function performNoise() {
-  const persona = rand(PERSONAS);
-  const query = buildQuery(persona);
-
-  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-  const wikiBase = 'https://en.wikipedia.org/wiki/';
-  const wikiTopic = query.replace(/\s+/g, '_');
-  const wikiUrl = wikiBase + encodeURIComponent(wikiTopic);
-
-  console.log(
-    `%c[NOISE ENGINE] Generating noise profile: %c${persona.name}`,
-    'color: #38bdf8; font-weight: bold;',
-    'color: #f59e0b; font-weight: bold;'
-  );
-
-  console.log(
-    `%c[QUERY GENERATED] "${query}"`,
-    'color: #a855f7; font-weight: bold;'
-  );
-
-  const urls = [];
-
-  try {
-    console.log(`%c[NETWORK GET] Fetching: ${googleUrl}`, 'color: #94a3b8;');
-    await fetch(googleUrl, { method: 'GET', mode: 'no-cors' });
-    urls.push(googleUrl);
-  } catch (e) {
-    // Ignore network errors
+  if (isRunning) {
+    console.log('[NOISE ENGINE] Activity cycle already running.');
+    return;
   }
 
-  try {
-    console.log(`%c[NETWORK GET] Fetching: ${wikiUrl}`, 'color: #94a3b8;');
-    await fetch(wikiUrl, { method: 'GET', mode: 'no-cors' });
-    urls.push(wikiUrl);
-  } catch (e) {
-    // Ignore network errors
-  }
+  isRunning = true;
 
-  // Report back to background service worker
-  chrome.runtime.sendMessage({
-    type: 'offscreenResult',
-    persona: persona.name,
-    query,
-    urls
-  }, () => {
-    // No-op; background will handle storage
-  });
+  try {
+    const persona = selectPersona();
+    const query = buildQuery(persona);
+
+    const googleUrl =
+      WEBSITES.google + encodeURIComponent(query);
+
+    const wikiUrl = createWikipediaUrl(query);
+
+    console.log(`[NOISE ENGINE] Selected persona: ${persona.name}`);
+    console.log(`[NOISE ENGINE] Generated query: ${query}`);
+
+    // Send requests sequentially
+    const results = [];
+
+    results.push(await sendRequest(googleUrl));
+    results.push(await sendRequest(wikiUrl));
+
+    // Collect attempted URLs for compatibility with background.js
+    const urls = results.map(result => result.url);
+
+    // Send activity details to the background service worker
+    chrome.runtime.sendMessage({
+      type: 'offscreenResult',
+      persona: persona.name,
+      query,
+      urls
+    }, () => {
+      if (chrome.runtime.lastError) {
+        console.error(
+          '[NOISE ENGINE] Message error:',
+          chrome.runtime.lastError.message
+        );
+      }
+    });
+
+    console.log('[NOISE ENGINE] Activity cycle completed.');
+
+  } catch (error) {
+    console.error('[NOISE ENGINE] Activity cycle error:', error);
+
+  } finally {
+    isRunning = false;
+  }
 }
 
-// Listen for messages from background to trigger a noise cycle
+// Listen for messages from the background service worker
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === 'runNoise') {
-    performNoise().then(() => sendResponse({ done: true }));
-    return true; // async
+  if (!msg || msg.type !== 'runNoise') {
+    return;
   }
-});
 
-// Keep the offscreen page alive while work is pending
-self.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
-    // No action needed – page stays alive until Chrome discards it
-  }
+  performNoise()
+    .then(() => sendResponse({ done: true }))
+    .catch(error => {
+      console.error('[NOISE ENGINE] Unexpected error:', error);
+      sendResponse({ done: false });
+    });
+
+  return true;
 });

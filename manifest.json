@@ -1,15 +1,18 @@
+
 {
   "manifest_version": 3,
   "name": "Algorithmic Noise Generator",
-  "description": "Generates background traffic to obfuscate user behavior.",
-  "version": "1.0",
+  "version": "1.0.0",
+  "description": "A privacy-focused Chrome extension that explores synthetic browsing activity and online behavioral tracking.",
   "permissions": [
     "storage",
     "alarms",
-    "offscreen",
-    "scripting"
+    "offscreen"
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": [
+    "https://www.google.com/*",
+    "https://en.wikipedia.org/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },

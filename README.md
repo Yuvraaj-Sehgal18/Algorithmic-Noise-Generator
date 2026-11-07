@@ -1,2 +1,9 @@
 # Algorithmic Noise Generator
-**Algorithmic Noise Generator** is a privacy-focused Chrome extension project that explores behavioral obfuscation as a way to reduce the accuracy of online tracking and profiling. It aims to generate synthetic browsing interests across diverse personas, including astrophysics, vintage gardening, luxury sailing, and medieval history, to introduce artificial signals into behavioral data.  Built around JavaScript and Chrome Extension Manifest V3, the project explores background scheduling, activity generation, state management, and real-time logging through a simple user interface. Users can control the generator, configure activity frequency, and monitor generated events.  The goal is to investigate whether carefully designed synthetic activity can make behavioral profiles less accurate and improve user privacy. This project serves as an exploration of AI-driven privacy protection, browser extension development, and the limitations of behavioral tracking countermeasures.
+
+**Algorithmic Noise Generator** is a privacy-focused Chrome extension that explores how synthetic browsing activity can affect online tracking and behavioral profiling.
+
+It generates artificial browsing interests through different everyday personas, covering topics such as technology, food, travel, sports, education, entertainment, health, and lifestyle. These activities are designed to introduce additional signals into browsing data and explore whether they can make online behavioral profiles less accurate.
+
+Built using JavaScript and Chrome Extension Manifest V3, the project includes background activity scheduling, configurable frequency settings, persona-based query generation, activity tracking, and a simple popup dashboard with real-time status and logs.
+
+The main goal is to understand how online tracking works and explore the potential and limitations of synthetic browsing activity as a privacy protection technique.

@@ -1,7 +1,4 @@
 
-// offscreen.js - Handles synthetic browsing activity in the background
-
-// Available personas and their everyday interests
 const PERSONAS = [
   {
     name: 'Technology',
@@ -45,74 +42,40 @@ const PERSONAS = [
   }
 ];
 
-// Website configuration
 const WEBSITES = {
   google: 'https://www.google.com/search?q=',
   wikipedia: 'https://en.wikipedia.org/wiki/'
 };
 
-// Prevent multiple activity cycles from running together
 let isRunning = false;
 
-// Select a random item from an array
-function rand(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
+const rand = arr => arr[Math.floor(Math.random() * arr.length)];
 
-// Select a random persona
-function selectPersona() {
-  return rand(PERSONAS);
-}
-
-// Generate a query using unique topics
 function buildQuery(persona) {
   const topics = [...persona.topics];
   const count = Math.floor(Math.random() * 3) + 1;
-  const selectedTopics = [];
+  const selected = [];
 
-  for (let i = 0; i < count && topics.length > 0; i++) {
-    const index = Math.floor(Math.random() * topics.length);
-    selectedTopics.push(topics.splice(index, 1)[0]);
+  while (selected.length < count && topics.length) {
+    selected.push(topics.splice(Math.floor(Math.random() * topics.length), 1)[0]);
   }
 
-  return selectedTopics
+  return selected
     .map(topic => topic.replace(/\b\w/g, char => char.toUpperCase()))
     .join(' ');
 }
 
-// Create a Wikipedia URL
-function createWikipediaUrl(query) {
-  const topic = query.replace(/\s+/g, '_');
-  return WEBSITES.wikipedia + encodeURIComponent(topic);
-}
-
-// Perform a network request
 async function sendRequest(url) {
   try {
-    await fetch(url, {
-      method: 'GET',
-      mode: 'no-cors'
-    });
-
+    await fetch(url, { method: 'GET', mode: 'no-cors' });
     console.log(`[NOISE ENGINE] Request attempted: ${url}`);
-
-    return {
-      url,
-      status: 'attempted'
-    };
-
   } catch (error) {
-    console.error('[NOISE ENGINE] Request failed:', error);
-
-    return {
-      url,
-      status: 'failed',
-      error: error.message
-    };
+    console.error('[NOISE ENGINE] Request failed:', error.message);
   }
+
+  return url;
 }
 
-// Generate one synthetic activity cycle
 async function performNoise() {
   if (isRunning) {
     console.log('[NOISE ENGINE] Activity cycle already running.');
@@ -122,27 +85,22 @@ async function performNoise() {
   isRunning = true;
 
   try {
-    const persona = selectPersona();
+    const persona = rand(PERSONAS);
     const query = buildQuery(persona);
 
-    const googleUrl =
-      WEBSITES.google + encodeURIComponent(query);
+    const urls = [
+      WEBSITES.google + encodeURIComponent(query),
+      WEBSITES.wikipedia + encodeURIComponent(query.replace(/\s+/g, '_'))
+    ];
 
-    const wikiUrl = createWikipediaUrl(query);
+    console.log(`[NOISE ENGINE] Persona: ${persona.name}`);
+    console.log(`[NOISE ENGINE] Query: ${query}`);
 
-    console.log(`[NOISE ENGINE] Selected persona: ${persona.name}`);
-    console.log(`[NOISE ENGINE] Generated query: ${query}`);
+    // Execute requests one after another
+    for (const url of urls) {
+      await sendRequest(url);
+    }
 
-    // Send requests sequentially
-    const results = [];
-
-    results.push(await sendRequest(googleUrl));
-    results.push(await sendRequest(wikiUrl));
-
-    // Collect attempted URLs for compatibility with background.js
-    const urls = results.map(result => result.url);
-
-    // Send activity details to the background service worker
     chrome.runtime.sendMessage({
       type: 'offscreenResult',
       persona: persona.name,
@@ -150,35 +108,25 @@ async function performNoise() {
       urls
     }, () => {
       if (chrome.runtime.lastError) {
-        console.error(
-          '[NOISE ENGINE] Message error:',
-          chrome.runtime.lastError.message
-        );
+        console.error('[NOISE ENGINE] Message error:', chrome.runtime.lastError.message);
       }
     });
 
     console.log('[NOISE ENGINE] Activity cycle completed.');
 
   } catch (error) {
-    console.error('[NOISE ENGINE] Activity cycle error:', error);
-
+    console.error('[NOISE ENGINE] Activity cycle error:', error.message);
   } finally {
     isRunning = false;
   }
 }
 
-// Listen for messages from the background service worker
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || msg.type !== 'runNoise') {
-    return;
-  }
+  if (msg?.type !== 'runNoise') return;
 
-  performNoise()
-    .then(() => sendResponse({ done: true }))
-    .catch(error => {
-      console.error('[NOISE ENGINE] Unexpected error:', error);
-      sendResponse({ done: false });
-    });
+  performNoise().then(() => {
+    sendResponse({ done: true });
+  });
 
   return true;
 });

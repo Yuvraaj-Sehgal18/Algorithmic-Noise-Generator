@@ -3,14 +3,15 @@
   "manifest_version": 3,
   "name": "Algorithmic Noise Generator",
   "version": "1.0.0",
-  "description": "A privacy-focused extension that explores synthetic browsing activity to study online tracking and behavioral profiling.",
+  "description": "A privacy-focused Chrome extension that explores synthetic browsing activity and online behavioral tracking.",
   "permissions": [
     "storage",
     "alarms",
     "offscreen"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "https://www.google.com/*",
+    "https://en.wikipedia.org/*"
   ],
   "background": {
     "service_worker": "background.js"

@@ -49,34 +49,43 @@ const WEBSITES = {
 
 let isRunning = false;
 
+// Selects a random item from an array.
 const rand = arr => arr[Math.floor(Math.random() * arr.length)];
 
+// Creates a search query using 1 to 3 random topics from a persona.
 function buildQuery(persona) {
   const topics = [...persona.topics];
   const count = Math.floor(Math.random() * 3) + 1;
   const selected = [];
 
-  while (selected.length < count && topics.length) {
-    selected.push(topics.splice(Math.floor(Math.random() * topics.length), 1)[0]);
+  while (selected.length < count) {
+    const index = Math.floor(Math.random() * topics.length);
+    selected.push(topics.splice(index, 1)[0]);
   }
 
+  // Capitalise the first letter of each word.
   return selected
     .map(topic => topic.replace(/\b\w/g, char => char.toUpperCase()))
     .join(' ');
 }
 
+// Sends a request to a website and handles any network errors.
 async function sendRequest(url) {
   try {
-    await fetch(url, { method: 'GET', mode: 'no-cors' });
+    await fetch(url, {
+      method: 'GET',
+      mode: 'no-cors'
+    });
+
     console.log(`[NOISE ENGINE] Request attempted: ${url}`);
   } catch (error) {
     console.error('[NOISE ENGINE] Request failed:', error.message);
   }
-
-  return url;
 }
 
+// Runs one complete activity cycle.
 async function performNoise() {
+  // Prevents multiple activity cycles from running together.
   if (isRunning) {
     console.log('[NOISE ENGINE] Activity cycle already running.');
     return;
@@ -85,9 +94,11 @@ async function performNoise() {
   isRunning = true;
 
   try {
+    // Select a random persona and generate its search query.
     const persona = rand(PERSONAS);
     const query = buildQuery(persona);
 
+    // Prepare Google and Wikipedia URLs.
     const urls = [
       WEBSITES.google + encodeURIComponent(query),
       WEBSITES.wikipedia + encodeURIComponent(query.replace(/\s+/g, '_'))
@@ -96,11 +107,12 @@ async function performNoise() {
     console.log(`[NOISE ENGINE] Persona: ${persona.name}`);
     console.log(`[NOISE ENGINE] Query: ${query}`);
 
-    // Execute requests one after another
+    // Send requests one after another.
     for (const url of urls) {
       await sendRequest(url);
     }
 
+    // Send the activity details to the background script.
     chrome.runtime.sendMessage({
       type: 'offscreenResult',
       persona: persona.name,
@@ -117,10 +129,12 @@ async function performNoise() {
   } catch (error) {
     console.error('[NOISE ENGINE] Activity cycle error:', error.message);
   } finally {
+    // Allows the next activity cycle to start.
     isRunning = false;
   }
 }
 
+// Listens for messages from the background service worker.
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type !== 'runNoise') return;
 
@@ -128,5 +142,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({ done: true });
   });
 
+  // Keeps the message channel open for the async response.
   return true;
 });
